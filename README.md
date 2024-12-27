@@ -1,1 +1,1 @@
-rm -f USB-network-setup.sh && wget https://raw.githubusercontent.com/amirhosseinchoghaei/Increase-openwrt-disk-space/main/exroot.sh && chmod 777 exroot.sh && sh exroot.sh
+rm -f setup.sh && wget https://github.com/tsunamihell/USB-network-setup/blob/main/setup.sh && chmod 777 setup.sh && sh setup.sh
