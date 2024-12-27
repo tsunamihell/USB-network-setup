@@ -1,7 +1,37 @@
 #!/bin/bash
 
+# Check internet connectivity
+ping -c 1 google.com > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "No internet connection. Please check your network settings."
+    exit 1
+fi
+
+# Retry opkg update up to 5 times
+TRIES=0
+while [ ${TRIES} -lt 5 ]; do
+    opkg update && break
+    let TRIES++
+    echo "Retrying opkg update (${TRIES}/5)..."
+    sleep 2
+done
+
+if [ ${TRIES} -eq 5 ]; then
+    echo "Package update failed after 5 attempts."
+    exit 1
+fi
+
+# Replace OpenWRT repository mirror if needed
+REPO_URL="https://downloads.openwrt.org/releases/23.05.0"
+ALTERNATE_REPO="http://mirror2.openwrt.org/releases/23.05.0"
+
+wget --spider "${REPO_URL}" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "Switching to alternate repository..."
+    sed -i "s|${REPO_URL}|${ALTERNATE_REPO}|g" /etc/opkg/distfeeds.conf
+fi
+
 # Install required packages
-opkg update || { echo 'Package update failed'; exit 1; }
 opkg install kmod-usb-net-rndis
 opkg install kmod-usb-net-huawei-cdc-ncm
 opkg install kmod-usb-net-cdc-ncm kmod-usb-net-cdc-eem kmod-usb-net-cdc-ether kmod-usb-net-cdc-subset
@@ -19,6 +49,11 @@ sed -i -e "\$i usbmuxd" /etc/rc.local
 
 # Configure network interfaces
 USB_IFACE=$(ls /sys/class/net | grep 'usb' | head -n 1)
+if [ -z "${USB_IFACE}" ]; then
+    echo "No USB interface detected. Falling back to eth1."
+    USB_IFACE="eth1"
+fi
+
 uci set network.wan.ifname="${USB_IFACE}"
 uci set network.wan6.ifname="${USB_IFACE}"
 uci commit network
@@ -64,7 +99,9 @@ cat << "EOF" >> /etc/crontabs/root
 EOF
 
 # Ensure cron service is installed and enabled
-opkg install cron
+if ! opkg list-installed | grep -q "^cron "; then
+    opkg install cron || { echo "Failed to install cron"; exit 1; }
+fi
 /etc/init.d/cron enable
 /etc/init.d/cron start
 
