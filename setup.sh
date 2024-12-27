@@ -10,41 +10,20 @@ echo "Running as root..."
 sleep 2
 clear
 
-# Check internet connectivity
-ping -c 1 google.com > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    echo -e "${RED}No internet connection. Please check your network settings.${NC}"
-    exit 1
-fi
 
-# Retry opkg update up to 5 times
-TRIES=0
-while [ ${TRIES} -lt 5 ]; do
-    opkg update && break
-    let TRIES++
-    echo "Retrying opkg update (${TRIES}/5)..."
-    sleep 2
-done
 
-if [ ${TRIES} -eq 5 ]; then
-    echo -e "${RED}Package update failed after 5 attempts.${NC}"
-    exit 1
-fi
-
-# Replace OpenWRT repository mirror if needed
-REPO_URL="https://downloads.openwrt.org/releases/23.05.0"
-ALTERNATE_REPO="http://mirror2.openwrt.org/releases/23.05.0"
-
-wget --spider "${REPO_URL}" > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-    echo -e "${YELLOW}Switching to alternate repository...${NC}"
-    sed -i "s|${REPO_URL}|${ALTERNATE_REPO}|g" /etc/opkg/distfeeds.conf
-fi
 
 # Install required USB internet packages
 opkg install kmod-usb-net-rndis
-opkg install kmod-usb-net-cdc-ether
-opkg install usbmuxd libimobiledevice usbutils
+opkg install kmod-usb-net-huawei-cdc-ncm
+opkg install kmod-usb-net-cdc-ncm kmod-usb-net-cdc-eem kmod-usb-net-cdc-ether kmod-usb-net-cdc-subset
+opkg install kmod-nls-base kmod-usb-core kmod-usb-net kmod-usb-net-cdc-ether kmod-usb2
+opkg install kmod-usb-net-ipheth usbmuxd libimobiledevice usbutils
+opkg install kmod-usb-net-qmi-wwan uqmi
+opkg install kmod-usb-serial kmod-usb-serial-option kmod-usb-serial-wwan
+opkg install usb-modeswitch usb-modeswitch-data
+opkg install kmod-usb-net-rndis kmod-usb-net-asix kmod-usb-net-cdc-acm kmod-usb-net-rtl8152
+opkg install kmod-usb-serial-ch341 kmod-usb-serial-pl2303
 
 # Configure usbmuxd
 usbmuxd -v
