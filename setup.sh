@@ -12,7 +12,7 @@ clear
 
 
 
-
+opkg update
 # Install required USB internet packages
 opkg install kmod-usb-net-rndis
 opkg install kmod-usb-net-huawei-cdc-ncm
